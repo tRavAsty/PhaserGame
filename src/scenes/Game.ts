@@ -7,6 +7,10 @@ export default class Demo extends Phaser.Scene {
 
     score: integer = 0;
     scoreText: Phaser.GameObjects.Text;
+    stars: Phaser.Physics.Arcade.Group;
+    bombs: Phaser.Physics.Arcade.Group;
+
+    gameOver: boolean = false;
     constructor() {
         super('GameScene');
     }
@@ -59,28 +63,58 @@ export default class Demo extends Phaser.Scene {
             repeat: -1
         });
 
-        const stars = this.physics.add.group({
+        this.stars = this.physics.add.group({
             key: 'star',
             repeat: 11,
             setXY: {x: 12, y: 0, stepX: 70}
         });
 
-        stars.children.iterate(function (child) {
-            const s = child as Sprite
-            s.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+        this.stars.children.iterate(child => {
+          (child as Sprite).setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
         });
 
-        this.physics.add.collider(stars, platforms);
-        this.physics.add.overlap(this.player, stars, this.collectStar, undefined, this);
+        this.physics.add.collider(this.stars, platforms);
+        this.physics.add.overlap(this.player, this.stars, this.collectStar, undefined, this);
         this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px' });
+
+      this.bombs = this.physics.add.group();
+
+      this.physics.add.collider(this.bombs, platforms);
+
+      this.physics.add.collider(this.player, this.bombs, this.hitBomb, undefined, this);
     }
 
     collectStar(player:any, star:any){
       (star as Sprite).disableBody(true,true);
       this.score += 10;
       this.scoreText.setText('Score: ' + this.score);
+      if (this.stars.countActive(true) === 0)
+      {
+        this.stars.children.iterate(child => {
+
+          (child as Sprite).enableBody(true, child.x, 0, true, true);
+
+        });
+
+        const x = (player.x < 400) ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+        const bomb = this.bombs.create(x, 16, 'bomb');
+        bomb.setBounce(1);
+        bomb.setCollideWorldBounds(true);
+        bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+
+      }
     }
 
+    hitBomb(player:any, bombs:any){
+      this.physics.pause();
+
+      player.setTint(0xff0000);
+
+      player.anims.play('turn');
+
+      this.gameOver = true;
+    }
     update(): void {
         if (this.cursors.left.isDown) {
             this.player.setVelocityX(-160);
