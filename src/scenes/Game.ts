@@ -5,6 +5,8 @@ export default class Demo extends Phaser.Scene {
     cursors: Phaser.Types.Input.Keyboard.CursorKeys;
     player: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
 
+    score: integer = 0;
+    scoreText: Phaser.GameObjects.Text;
     constructor() {
         super('GameScene');
     }
@@ -69,9 +71,14 @@ export default class Demo extends Phaser.Scene {
         });
 
         this.physics.add.collider(stars, platforms);
-        this.physics.add.overlap(this.player, stars, (player, star) => {
-            (star as Sprite).disableBody(true, true)
-        }, undefined, this);
+        this.physics.add.overlap(this.player, stars, this.collectStar, undefined, this);
+        this.scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '32px' });
+    }
+
+    collectStar(player:any, star:any){
+      (star as Sprite).disableBody(true,true);
+      this.score += 10;
+      this.scoreText.setText('Score: ' + this.score);
     }
 
     update(): void {
